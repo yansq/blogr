@@ -49,6 +49,4 @@ fn main() {
         }
         Test => println!("test success"),
     };
-
-    println!("Hello, world!");
 }
