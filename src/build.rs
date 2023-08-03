@@ -33,13 +33,20 @@ pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<(), anyhow::E
             .replace(content_dir, output_dir)
             .replace(".md", ".html");
         if Path::new(&public_path).exists() {
-            let content_modified = fs::metadata(file).unwrap().modified().unwrap();
-            let public_modified = fs::metadata(&public_path).unwrap().modified().unwrap();
-            if content_modified > public_modified {
-                generate_blog(file, &public_path);
+            let content_modified = fs::metadata(file).unwrap().modified();
+            let public_modified = fs::metadata(&public_path).unwrap().modified();
+            match (content_modified, public_modified) {
+                (Ok(content_modified), Ok(public_modified)) => {
+                    if content_modified > public_modified {
+                        generate_blog(file, &public_path)?;
+                    }
+                }
+                _ => {
+                    generate_blog(file, &public_path)?;
+                }
             }
         } else {
-            generate_blog(file, &public_path);
+            generate_blog(file, &public_path)?;
         }
 
         html_files.push(public_path);
@@ -49,9 +56,9 @@ pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<(), anyhow::E
     Ok(())
 }
 
-fn generate_blog(file: &str, public_path: &str) {
+fn generate_blog(file: &str, public_path: &str) -> Result<(), anyhow::Error> {
     // parse markdowns into htmls content
-    let markdown = fs::read_to_string(file).unwrap();
+    let markdown = fs::read_to_string(file)?;
     let parser = pulldown_cmark::Parser::new(&markdown);
     let mut content = String::new();
     pulldown_cmark::html::push_html(&mut content, parser);
@@ -61,12 +68,13 @@ fn generate_blog(file: &str, public_path: &str) {
     context.insert("title", &get_title(file));
     context.insert("content", &content);
     context.insert("date", "");
-    let rendered = TEMPLATES.render("blog-page.html", &context);
+    let rendered = TEMPLATES.render("blog-page.html", &context)?;
 
     // write to file
     let folder = Path::new(public_path).parent().unwrap();
     let _ = fs::create_dir_all(folder);
-    fs::write(public_path, rendered.unwrap()).unwrap();
+    fs::write(public_path, rendered)?;
+    Ok(())
 }
 
 fn generate_index(files: &[String], output_dir: &str) -> Result<(), anyhow::Error> {
@@ -83,8 +91,8 @@ fn generate_index(files: &[String], output_dir: &str) -> Result<(), anyhow::Erro
         .collect();
     let mut context = tera::Context::new();
     context.insert("pages", &index_list);
-    let rendered = TEMPLATES.render("index.html", &context);
-    fs::write(format!("{}/index.html", output_dir), rendered.unwrap())?;
+    let rendered = TEMPLATES.render("index.html", &context)?;
+    fs::write(format!("{}/index.html", output_dir), rendered)?;
     Ok(())
 }
 

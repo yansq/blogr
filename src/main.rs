@@ -39,14 +39,32 @@ fn main() {
         Build => {
             info!("Start building...");
             let _start = Instant::now();
-            let _ = rebuild_site(CONTENT_DIR, PUBLIC_DIR);
+            match rebuild_site(CONTENT_DIR, PUBLIC_DIR) {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("Parsing error(s): {}", e);
+                    std::process::exit(1);
+                }
+            };
             info!("Building success!");
         }
         Server => {
-            let _ = rebuild_site(CONTENT_DIR, PUBLIC_DIR);
+            match rebuild_site(CONTENT_DIR, PUBLIC_DIR) {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("Parsing error(s): {}", e);
+                    std::process::exit(1);
+                }
+            };
             println!("Start server...");
-            let _ = start_server();
+            match start_server() {
+                Ok(t) => t,
+                Err(e) => {
+                    eprintln!("Server error(s): {}", e);
+                    std::process::exit(1);
+                }
+            };
         }
-        Test => println!("test success"),
+        Test => info!("test success"),
     };
 }
