@@ -6,6 +6,8 @@ pub enum Action {
     Build,
     /// Useless
     Test,
+    /// start localhost server
+    Server,
 }
 
 #[derive(Debug, StructOpt)]
