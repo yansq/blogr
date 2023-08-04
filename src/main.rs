@@ -1,8 +1,10 @@
 use lazy_static::lazy_static;
-use log::info;
-use std::time::Instant;
+use std::{env, time::Instant};
 use structopt::StructOpt;
 use tera::Tera;
+
+#[macro_use]
+extern crate log;
 
 mod build;
 mod cli;
@@ -21,7 +23,7 @@ lazy_static! {
         let mut tera = match Tera::new("templates/**/*") {
             Ok(t) => t,
             Err(e) => {
-                eprintln!("Parsing error(s): {}", e);
+                error!("Parsing error(s): {}", e);
                 std::process::exit(1);
             }
         };
@@ -31,7 +33,7 @@ lazy_static! {
 }
 
 fn main() {
-    env_logger::init();
+    init_log();
 
     let CommandLineArgs { action } = CommandLineArgs::from_args();
 
@@ -39,32 +41,28 @@ fn main() {
         Build => {
             info!("Start building...");
             let _start = Instant::now();
-            match rebuild_site(CONTENT_DIR, PUBLIC_DIR) {
-                Ok(t) => t,
-                Err(e) => {
-                    eprintln!("Parsing error(s): {}", e);
-                    std::process::exit(1);
-                }
-            };
+            if let Err(e) = rebuild_site(CONTENT_DIR, PUBLIC_DIR) {
+                error!("Parsing error(s): {}", e);
+                std::process::exit(1);
+            }
             info!("Building success!");
         }
         Server => {
-            match rebuild_site(CONTENT_DIR, PUBLIC_DIR) {
-                Ok(t) => t,
-                Err(e) => {
-                    eprintln!("Parsing error(s): {}", e);
-                    std::process::exit(1);
-                }
-            };
-            println!("Start server...");
-            match start_server() {
-                Ok(t) => t,
-                Err(e) => {
-                    eprintln!("Server error(s): {}", e);
-                    std::process::exit(1);
-                }
-            };
+            if let Err(e) = rebuild_site(CONTENT_DIR, PUBLIC_DIR) {
+                error!("Parsing error(s): {}", e);
+                std::process::exit(1);
+            }
+            info!("Start server...");
+            if let Err(e) = start_server() {
+                error!("Server error(s): {}", e);
+                std::process::exit(1);
+            }
         }
         Test => info!("test success"),
     };
+}
+
+fn init_log() {
+    env::set_var("RUST_LOG", "info");
+    env_logger::init();
 }

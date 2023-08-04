@@ -1,6 +1,6 @@
+use anyhow::Result;
 use std::fs;
-use std::path::Path;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 use crate::TEMPLATES;
@@ -13,7 +13,7 @@ struct IndexItem {
 
 /// If you delete a markdown file, it's link will be removed from index, but the generated HTML file in public
 /// directory will not be deleted.
-pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<(), anyhow::Error> {
+pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<()> {
     if !Path::new(&output_dir).exists() {
         fs::create_dir(output_dir)?;
     }
@@ -33,8 +33,8 @@ pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<(), anyhow::E
             .replace(content_dir, output_dir)
             .replace(".md", ".html");
         if Path::new(&public_path).exists() {
-            let content_modified = fs::metadata(file).unwrap().modified();
-            let public_modified = fs::metadata(&public_path).unwrap().modified();
+            let content_modified = fs::metadata(file)?.modified();
+            let public_modified = fs::metadata(&public_path)?.modified();
             match (content_modified, public_modified) {
                 (Ok(content_modified), Ok(public_modified)) => {
                     if content_modified > public_modified {
@@ -56,7 +56,7 @@ pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<(), anyhow::E
     Ok(())
 }
 
-fn generate_blog(file: &str, public_path: &str) -> Result<(), anyhow::Error> {
+fn generate_blog(file: &str, public_path: &str) -> Result<()> {
     // parse markdowns into htmls content
     let markdown = fs::read_to_string(file)?;
     let parser = pulldown_cmark::Parser::new(&markdown);
@@ -77,7 +77,7 @@ fn generate_blog(file: &str, public_path: &str) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-fn generate_index(files: &[String], output_dir: &str) -> Result<(), anyhow::Error> {
+fn generate_index(files: &[String], output_dir: &str) -> Result<()> {
     let index_list: Vec<IndexItem> = files
         .iter()
         .map(|f| {
