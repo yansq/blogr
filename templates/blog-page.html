@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1 class="title">
-  {{ title }}
-</h1>
-<p class="subtitle"><strong>{{ date }}</strong></p>
-{{ content | safe }}
+<article>
+  <h1 class="title">
+    {{ title }}
+  </h1>
+  <p class="subtitle"><strong>{{ date }}</strong></p>
+  {{ content | safe }}
+</article>
 {% endblock content %}

@@ -53,6 +53,7 @@ pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<()> {
     }
 
     generate_index(&html_files, output_dir)?;
+    copy_assets(output_dir)?;
     Ok(())
 }
 
@@ -99,4 +100,26 @@ fn generate_index(files: &[String], output_dir: &str) -> Result<()> {
 fn get_title(file: &str) -> String {
     let path = PathBuf::from(file);
     String::from(path.file_stem().and_then(|s| s.to_str()).unwrap())
+}
+
+fn copy_assets(output_dir: &str) -> Result<()> {
+    let dest_path_str = format!("{}/assets", output_dir);
+    let dest_path = Path::new(&dest_path_str);
+    if dest_path.exists() {
+        fs::remove_dir_all(dest_path)?;
+    }
+    fs::create_dir(dest_path)?;
+
+    let src_path = Path::new("assets");
+    if src_path.exists() {
+        for entry in fs::read_dir(src_path)? {
+            let entry = entry?;
+            let src_file = entry.path();
+            let dest_file = dest_path.join(entry.file_name());
+            if src_file.is_file() {
+                fs::copy(&src_file, &dest_file)?;
+            }
+        }
+    }
+    Ok(())
 }

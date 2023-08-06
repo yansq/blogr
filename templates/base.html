@@ -1,17 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-
+  
 <head>
   <meta charset="utf-8">
+  {% block head %}
   <title>MyBlog</title>
+  <link rel="stylesheet" href="/assets/mvp.css"> 
+  {% endblock head %}
 </head>
 
 <body>
-  <section class="section">
+  <main>
     <div class="container">
       {% block content %} {% endblock %}
     </div>
-  </section>
+  </main>
 </body>
 
 </html>
