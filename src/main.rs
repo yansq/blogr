@@ -12,6 +12,7 @@ mod server;
 
 use build::rebuild_site;
 use cli::{Action::*, CommandLineArgs};
+use server::hot_update;
 use server::start_server;
 
 const CONTENT_DIR: &str = "content";
@@ -32,7 +33,8 @@ lazy_static! {
     };
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     init_log();
 
     let CommandLineArgs { action } = CommandLineArgs::from_args();
@@ -53,7 +55,11 @@ fn main() {
                 std::process::exit(1);
             }
             info!("Start server...");
-            if let Err(e) = start_server() {
+
+            let task1 = tokio::spawn(start_server());
+            let task2 = tokio::spawn(hot_update());
+
+            if let Err(e) = tokio::try_join!(task1, task2) {
                 error!("Server error(s): {}", e);
                 std::process::exit(1);
             }

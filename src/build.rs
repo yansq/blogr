@@ -115,8 +115,8 @@ fn copy_assets(output_dir: &str) -> Result<()> {
         for entry in fs::read_dir(src_path)? {
             let entry = entry?;
             let src_file = entry.path();
-            let dest_file = dest_path.join(entry.file_name());
             if src_file.is_file() {
+                let dest_file = dest_path.join(entry.file_name());
                 fs::copy(&src_file, &dest_file)?;
             }
         }
