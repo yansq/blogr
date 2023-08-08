@@ -42,19 +42,21 @@ async fn main() {
     match action {
         Build => {
             info!("Start building...");
-            let _start = Instant::now();
+            let start = Instant::now();
             if let Err(e) = rebuild_site(CONTENT_DIR, PUBLIC_DIR) {
                 error!("Parsing error(s): {}", e);
                 std::process::exit(1);
             }
-            info!("Building success!");
+            info!(
+                "Building success, cost {} millseconds",
+                start.elapsed().as_millis()
+            );
         }
         Server => {
             if let Err(e) = rebuild_site(CONTENT_DIR, PUBLIC_DIR) {
                 error!("Parsing error(s): {}", e);
                 std::process::exit(1);
             }
-            info!("Start server...");
 
             let task1 = tokio::spawn(start_server());
             let task2 = tokio::spawn(hot_update());
