@@ -99,6 +99,12 @@ fn generate_blog(file: &str, public_path: &str) -> Result<()> {
                 accumulated_block.clear();
                 in_codeblock = false;
             }
+            //Event::Start(Tag::Image(link_type, src, title)) => {
+            //info!("{:?}", &link_type);
+            //info!("{:?}", &src);
+            //info!("{:?}", &title);
+            //events.push(Event::Start(Tag::Image(link_type, src, title)));
+            //}
             _ => events.push(event),
         }
     }
