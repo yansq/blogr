@@ -133,7 +133,7 @@ fn generate_index(files: &[String], output_dir: &str) -> Result<()> {
             let f = f.trim_start_matches(output_dir);
             let title = get_title(f);
             IndexItem {
-                permalink: f.to_string(),
+                permalink: f[1..].to_string(),
                 title,
             }
         })
