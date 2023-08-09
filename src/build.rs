@@ -57,34 +57,33 @@ pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<()> {
     }
 
     generate_index(&html_files, output_dir)?;
-    copy_assets(output_dir)?;
+    copy_assets(content_dir, output_dir)?;
     Ok(())
 }
 
 fn generate_blog(file: &str, public_path: &str) -> Result<()> {
-    // parse markdowns into htmls content
-    let markdown = fs::read_to_string(file)?;
-
     // for codeblock
-    let mut is_codeblock = false;
+    let mut in_codeblock = false;
     let mut accumulated_block = String::new();
     let ps = SyntaxSet::load_defaults_newlines();
     let ts = ThemeSet::load_defaults();
     let theme = &ts.themes["Solarized (light)"];
-
-    let mut events: Vec<Event<'_>> = Vec::new();
-    let parser_iter = pulldown_cmark::Parser::new(&markdown).into_offset_iter();
     let mut token = String::from("rust");
-    for (event, mut _range) in parser_iter {
+
+    // parse markdowns into htmls content
+    let markdown = fs::read_to_string(file)?;
+    let parser_iter = pulldown_cmark::Parser::new(&markdown).into_offset_iter();
+    let mut events: Vec<Event<'_>> = Vec::new();
+    for (event, _range) in parser_iter {
         match event {
             Event::Start(Tag::CodeBlock(ref kind)) => {
                 if let pulldown_cmark::CodeBlockKind::Fenced(fence) = kind {
                     token = fence.clone().into_string();
                 }
-                is_codeblock = true;
+                in_codeblock = true;
             }
             Event::Text(text) => {
-                if is_codeblock {
+                if in_codeblock {
                     accumulated_block += &text;
                 } else {
                     events.push(Event::Text(text));
@@ -98,7 +97,7 @@ fn generate_blog(file: &str, public_path: &str) -> Result<()> {
                     events.push(Event::Html(h.into()));
                 }
                 accumulated_block.clear();
-                is_codeblock = false;
+                in_codeblock = false;
             }
             _ => events.push(event),
         }
@@ -145,7 +144,7 @@ fn get_title(file: &str) -> String {
     String::from(path.file_stem().and_then(|s| s.to_str()).unwrap())
 }
 
-fn copy_assets(output_dir: &str) -> Result<()> {
+fn copy_assets(content_dir: &str, output_dir: &str) -> Result<()> {
     let dest_path_str = format!("{}/assets", output_dir);
     let dest_path = Path::new(&dest_path_str);
     if dest_path.exists() {
@@ -153,7 +152,8 @@ fn copy_assets(output_dir: &str) -> Result<()> {
     }
     fs::create_dir(dest_path)?;
 
-    let src_path = Path::new("assets");
+    let content_path_str = format!("{}/assets", content_dir);
+    let src_path = Path::new(&content_path_str);
     if src_path.exists() {
         for entry in fs::read_dir(src_path)? {
             let entry = entry?;
