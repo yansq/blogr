@@ -1,6 +1,10 @@
 use anyhow::Result;
+use pulldown_cmark::{Event, Tag};
 use std::fs;
 use std::path::{Path, PathBuf};
+use syntect::highlighting::ThemeSet;
+use syntect::html::highlighted_html_for_string;
+use syntect::parsing::SyntaxSet;
 use walkdir::WalkDir;
 
 use crate::TEMPLATES;
@@ -60,9 +64,48 @@ pub fn rebuild_site(content_dir: &str, output_dir: &str) -> Result<()> {
 fn generate_blog(file: &str, public_path: &str) -> Result<()> {
     // parse markdowns into htmls content
     let markdown = fs::read_to_string(file)?;
-    let parser = pulldown_cmark::Parser::new(&markdown);
+
+    // for codeblock
+    let mut is_codeblock = false;
+    let mut accumulated_block = String::new();
+    let ps = SyntaxSet::load_defaults_newlines();
+    let ts = ThemeSet::load_defaults();
+    let theme = &ts.themes["Solarized (light)"];
+
+    let mut events: Vec<Event<'_>> = Vec::new();
+    let parser_iter = pulldown_cmark::Parser::new(&markdown).into_offset_iter();
+    let mut token = String::from("rust");
+    for (event, mut _range) in parser_iter {
+        match event {
+            Event::Start(Tag::CodeBlock(ref kind)) => {
+                if let pulldown_cmark::CodeBlockKind::Fenced(fence) = kind {
+                    token = fence.clone().into_string();
+                }
+                is_codeblock = true;
+            }
+            Event::Text(text) => {
+                if is_codeblock {
+                    accumulated_block += &text;
+                } else {
+                    events.push(Event::Text(text));
+                }
+            }
+            Event::End(Tag::CodeBlock(_)) => {
+                let syntax = ps
+                    .find_syntax_by_token(&token)
+                    .unwrap_or_else(|| ps.find_syntax_plain_text());
+                if let Ok(h) = highlighted_html_for_string(&accumulated_block, &ps, syntax, theme) {
+                    events.push(Event::Html(h.into()));
+                }
+                accumulated_block.clear();
+                is_codeblock = false;
+            }
+            _ => events.push(event),
+        }
+    }
+
     let mut content = String::new();
-    pulldown_cmark::html::push_html(&mut content, parser);
+    pulldown_cmark::html::push_html(&mut content, events.into_iter());
 
     // put contents into template
     let mut context = tera::Context::new();
@@ -122,4 +165,28 @@ fn copy_assets(output_dir: &str) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use syntect::highlighting::ThemeSet;
+    use syntect::html::highlighted_html_for_string;
+    use syntect::parsing::SyntaxSet;
+
+    #[test]
+    fn syntect_html() {
+        // Load these once at the start of your program
+        let ps = SyntaxSet::load_defaults_newlines();
+        let ts = ThemeSet::load_defaults();
+        let theme = &ts.themes["Solarized (light)"];
+
+        let syntax = ps
+            .find_syntax_by_token("rust")
+            .unwrap_or_else(|| ps.find_syntax_plain_text());
+        let s = "pub struct Wow { hi: u64 }\nfn blah() -> u64 {}\n";
+
+        if let Ok(h) = highlighted_html_for_string(s, &ps, syntax, theme) {
+            println!("{}", h);
+        }
+    }
 }

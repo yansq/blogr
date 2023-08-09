@@ -7,12 +7,18 @@
 - list1
 - list2
 - list3
-
-aaaaa
+- list4
 
 ---
 
 ```rust
-println!("Hello, world!");
+fn add<'a>(a: &'a i32, b: &'a i32) -> &'a i32 {
+  &(a + b)
+}
+
+fn main() {
+    println!("Hello, world!");
+}
 ```
+
 [google](https://www.google.com)
